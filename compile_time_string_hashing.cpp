@@ -1,5 +1,7 @@
+#include <cstring>
 #include <iostream>
 #include <string_view>
+#include <cassert>
 
 template<size_t N>
 constexpr uint32_t HashImpl(const char (&str)[N], const size_t index);
@@ -44,7 +46,7 @@ uint32_t Fnv1aHash(const char* str, int length)
 
 uint32_t Fnv1aHash(const char* str)
 {
-    return Fnv1aHash(str, strlen(str));
+    return Fnv1aHash(str, std::strlen(str));
 }
 
 int main()
