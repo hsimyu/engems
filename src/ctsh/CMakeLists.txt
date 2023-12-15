@@ -1,0 +1,1 @@
+add_executable(ctsh compile_time_string_hashing.cpp)
