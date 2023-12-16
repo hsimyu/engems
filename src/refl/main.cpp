@@ -8,6 +8,25 @@ enum class PropertyType
     Float
 };
 
+template <typename T>
+constexpr PropertyType GetPropertyType();
+
+template <>
+constexpr PropertyType GetPropertyType<int>()
+{
+    return PropertyType::Int;
+}
+
+template <>
+constexpr PropertyType GetPropertyType<float>()
+{
+    return PropertyType::Float;
+}
+
+struct TypeDesc
+{
+};
+
 struct PropertyInfo
 {
     PropertyType t;
@@ -22,23 +41,34 @@ struct MyClass
     float c;
 };
 
-static constexpr PropertyInfo Properties[3] = {
-    PropertyInfo{
-        PropertyType::Int,
-        offsetof(MyClass, a),
-        "a"},
-    PropertyInfo{
-        PropertyType::Int,
-        offsetof(MyClass, b),
-        "b"},
-    PropertyInfo{
-        PropertyType::Float,
-        offsetof(MyClass, c),
-        "c"},
+#define REFL_PROP(name)                         \
+    PropertyInfo                                \
+    {                                           \
+        GetPropertyType<decltype(T::##name)>(), \
+            offsetof(T, name),                  \
+            #name                               \
+    }
+
+template <typename T>
+struct TypeInfo
+{
+    static constexpr PropertyInfo Properties[] = {};
 };
+
+template <>
+struct TypeInfo<MyClass>
+{
+    using T = MyClass;
+    static constexpr PropertyInfo Properties[] = {
+        REFL_PROP(a),
+        REFL_PROP(b),
+        REFL_PROP(c),
+    };
+};
+
 int main()
 {
-    constexpr auto view = std::span{Properties};
+    constexpr auto view = std::span{TypeInfo<MyClass>::Properties};
 
     for (auto &&elem : view)
     {
