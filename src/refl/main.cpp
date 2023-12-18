@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstddef>
 #include <span>
+#include <variant>
 
 enum class PropertyType
 {
@@ -28,19 +29,14 @@ struct TypeDesc
 };
 
 template <typename T>
+using MemberPtrVariant = std::variant<int T::*, float T::*>;
+
+template <typename T>
 struct PropertyInfo
 {
-    using MemberPtr = typename int T::*;
     PropertyType t;
-    MemberPtr pOffset;
+    MemberPtrVariant<T> pOffset;
     const char *name;
-};
-
-struct MyClass
-{
-    int a;
-    int b;
-    float c;
 };
 
 #define REFL_PROP(name)                         \
@@ -51,32 +47,28 @@ struct MyClass
             #name                               \
     }
 
-template <typename T>
-struct TypeInfo
+struct MyClass
 {
-    static constexpr PropertyInfo<T> Properties[] = {};
+    int a;
+    int b;
+    float c;
+
+    struct TypeInfo;
 };
 
-template <>
-struct TypeInfo<MyClass>
+struct MyClass::TypeInfo
 {
     using T = MyClass;
-    static constexpr PropertyInfo<T> Properties[] = {
+    static constexpr PropertyInfo<MyClass> Properties[] = {
         REFL_PROP(a),
         REFL_PROP(b),
-        // REFL_PROP(c),
+        REFL_PROP(c),
     };
 };
 
 int main()
 {
-    [[maybe_unused]] auto p1 = &MyClass::a;
-    constexpr auto view = std::span{TypeInfo<MyClass>::Properties};
-
-    for (auto &&elem : view)
-    {
-        printf("Name = %s, offset = %p\n", elem.name, elem.pOffset);
-    }
+    constexpr auto view = std::span{MyClass::TypeInfo::Properties};
 
     MyClass c{};
     c.a = 1;
@@ -90,8 +82,22 @@ int main()
     for (auto &&elem : view)
     {
         auto memberAddress = base;
-        const auto offset = elem.pOffset;
-        printf("- %s = %p + %zu = %d\n", elem.name, p, elem.pOffset, p->*offset);
+
+        switch (elem.pOffset.index())
+        {
+        case 0: // int
+        {
+            auto offset = std::get<0>(elem.pOffset);
+            printf("- %s = %d\n", elem.name, p->*offset);
+            break;
+        }
+        case 1: // float
+        {
+            auto offset = std::get<1>(elem.pOffset);
+            printf("- %s = %g\n", elem.name, p->*offset);
+            break;
+        }
+        }
     }
 
     return 0;
