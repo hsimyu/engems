@@ -15,5 +15,12 @@ int main()
 
     PrintMembers(c);
 
+    auto info = FindMemberInfo<MyClass>("b");
+    if (info.t != PropertyType::Invalid)
+    {
+        printf("- name = %s, type = %d\n", info.name, info.t);
+        PrintMemberValue(c, info); // -> 12
+    }
+
     return 0;
 }

@@ -4,9 +4,11 @@
 #include <cstddef>
 #include <span>
 #include <variant>
+#include <string_view>
 
 enum class PropertyType
 {
+    Invalid,
     Int,
     Float
 };
@@ -44,6 +46,44 @@ struct PropertyInfo
             &T::##name,                         \
             #name                               \
     }
+
+template <typename T>
+PropertyInfo<T> FindMemberInfo(std::string_view name)
+{
+    const auto properties = std::span{T::TypeInfo::Properties};
+    auto itr = std::find_if(properties.begin(), properties.end(),
+                            [name](const PropertyInfo<T> &elem)
+                            {
+                                return name == elem.name;
+                            });
+
+    if (itr == properties.end())
+    {
+        return {.t = PropertyType::Invalid};
+    }
+
+    return *itr;
+}
+
+template <typename T>
+void PrintMemberValue(const T &obj, const PropertyInfo<T> &info)
+{
+    switch (info.pOffset.index())
+    {
+    case 0: // int
+    {
+        auto offset = std::get<0>(info.pOffset);
+        printf("%d\n", obj.*offset);
+        break;
+    }
+    case 1: // float
+    {
+        auto offset = std::get<1>(info.pOffset);
+        printf("%g\n", obj.*offset);
+        break;
+    }
+    }
+}
 
 template <typename T>
 void PrintMembers(const T &obj)
