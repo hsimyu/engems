@@ -9,27 +9,21 @@ struct SubClass
 
 struct MyClass
 {
+    REFL_DEFINE(MyClass);
+
     int a;
     int b;
     float c;
 
-    union
-    {
-        ObjDesc subAddress;
-        SubClass sub;
-    };
+    REFL_OBJ_DECLARE(SubClass, sub);
 
     struct TypeInfo
     {
-        using T = MyClass;
-        static constexpr PropertyInfo<MyClass> Properties[] = {
+        static constexpr PropertyInfo<ReflBase> Properties[] = {
             REFL_PROP(a),
             REFL_PROP(b),
             REFL_PROP(c),
-            PropertyInfo<MyClass>{
-                PropertyType::Obj,
-                &MyClass::subAddress,
-                "sub"},
+            REFL_OBJ(sub),
         };
     };
 };

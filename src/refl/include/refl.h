@@ -29,12 +29,13 @@ constexpr PropertyType GetPropertyType<float>()
     return PropertyType::Float;
 }
 
+template <typename T>
 struct ObjDesc
 {
 };
 
 template <typename T>
-using MemberPtrVariant = std::variant<int T::*, float T::*, ObjDesc T::*>;
+using MemberPtrVariant = std::variant<int T::*, float T::*, ObjDesc<T> T::*>;
 
 template <typename T>
 struct PropertyInfo
@@ -44,12 +45,29 @@ struct PropertyInfo
     const char *name;
 };
 
-#define REFL_PROP(name)                         \
-    PropertyInfo<T>                             \
-    {                                           \
-        GetPropertyType<decltype(T::##name)>(), \
-            &T::##name,                         \
-            #name                               \
+#define REFL_DEFINE(typename) using ReflBase = typename
+
+#define REFL_OBJ_DECLARE(T, name)      \
+    union                              \
+    {                                  \
+        ObjDesc<ReflBase> addr_##name; \
+        T name;                        \
+    }
+
+#define REFL_OBJ(name)              \
+    PropertyInfo<ReflBase>          \
+    {                               \
+        PropertyType::Obj,          \
+            &ReflBase::addr_##name, \
+            #name                   \
+    }
+
+#define REFL_PROP(name)                                \
+    PropertyInfo<ReflBase>                             \
+    {                                                  \
+        GetPropertyType<decltype(ReflBase::##name)>(), \
+            &ReflBase::##name,                         \
+            #name                                      \
     }
 
 template <typename T>
@@ -69,34 +87,6 @@ PropertyInfo<T> FindMemberInfo(std::string_view name)
 
     return *itr;
 }
-
-// template <typename T>
-// void PrintMemberValue(const T &obj, const PropertyInfo<T> &info)
-// {
-//     switch (info.pOffset.index())
-//     {
-//     case 0: // int
-//     {
-//         auto offset = std::get<0>(info.pOffset);
-//         printf("%d\n", obj.*offset);
-//         break;
-//     }
-//     case 1: // float
-//     {
-//         auto offset = std::get<1>(info.pOffset);
-//         printf("%g\n", obj.*offset);
-//         break;
-//     }
-//     case 2: // Obj
-//     {
-//         printf("base address = %p\n", &obj);
-//         auto offset = std::get<2>(info.pOffset);
-//         auto address = &(obj.*offset);
-//         printf("subObj address = %p\n", address);
-//         break;
-//     }
-//     }
-// }
 
 template <typename T>
 void PrintMembers(const T &obj)
