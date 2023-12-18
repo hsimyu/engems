@@ -10,7 +10,8 @@ enum class PropertyType
 {
     Invalid,
     Int,
-    Float
+    Float,
+    Obj,
 };
 
 template <typename T>
@@ -28,8 +29,12 @@ constexpr PropertyType GetPropertyType<float>()
     return PropertyType::Float;
 }
 
+struct ObjDesc
+{
+};
+
 template <typename T>
-using MemberPtrVariant = std::variant<int T::*, float T::*>;
+using MemberPtrVariant = std::variant<int T::*, float T::*, ObjDesc T::*>;
 
 template <typename T>
 struct PropertyInfo
@@ -65,25 +70,33 @@ PropertyInfo<T> FindMemberInfo(std::string_view name)
     return *itr;
 }
 
-template <typename T>
-void PrintMemberValue(const T &obj, const PropertyInfo<T> &info)
-{
-    switch (info.pOffset.index())
-    {
-    case 0: // int
-    {
-        auto offset = std::get<0>(info.pOffset);
-        printf("%d\n", obj.*offset);
-        break;
-    }
-    case 1: // float
-    {
-        auto offset = std::get<1>(info.pOffset);
-        printf("%g\n", obj.*offset);
-        break;
-    }
-    }
-}
+// template <typename T>
+// void PrintMemberValue(const T &obj, const PropertyInfo<T> &info)
+// {
+//     switch (info.pOffset.index())
+//     {
+//     case 0: // int
+//     {
+//         auto offset = std::get<0>(info.pOffset);
+//         printf("%d\n", obj.*offset);
+//         break;
+//     }
+//     case 1: // float
+//     {
+//         auto offset = std::get<1>(info.pOffset);
+//         printf("%g\n", obj.*offset);
+//         break;
+//     }
+//     case 2: // Obj
+//     {
+//         printf("base address = %p\n", &obj);
+//         auto offset = std::get<2>(info.pOffset);
+//         auto address = &(obj.*offset);
+//         printf("subObj address = %p\n", address);
+//         break;
+//     }
+//     }
+// }
 
 template <typename T>
 void PrintMembers(const T &obj)
@@ -103,6 +116,12 @@ void PrintMembers(const T &obj)
         {
             auto offset = std::get<1>(elem.pOffset);
             printf("- %s = %g\n", elem.name, obj.*offset);
+            break;
+        }
+        case 2: // obj
+        {
+            auto offset = std::get<2>(elem.pOffset);
+            printf("- %s = %p\n", elem.name, &(obj.*offset));
             break;
         }
         }

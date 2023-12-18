@@ -2,11 +2,22 @@
 
 #include "refl.h"
 
+struct SubClass
+{
+    int d = 0;
+};
+
 struct MyClass
 {
     int a;
     int b;
     float c;
+
+    union
+    {
+        ObjDesc subAddress;
+        SubClass sub;
+    };
 
     struct TypeInfo
     {
@@ -15,6 +26,10 @@ struct MyClass
             REFL_PROP(a),
             REFL_PROP(b),
             REFL_PROP(c),
+            PropertyInfo<MyClass>{
+                PropertyType::Obj,
+                &MyClass::subAddress,
+                "sub"},
         };
     };
 };
