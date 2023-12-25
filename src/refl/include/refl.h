@@ -29,53 +29,42 @@ constexpr PropertyType GetPropertyType<float>()
     return PropertyType::Float;
 }
 
-template <typename T>
-struct ObjDesc
-{
-};
-
-template <typename T>
-using MemberPtrVariant = std::variant<int T::*, float T::*, ObjDesc<T> T::*>;
-
-template <typename T>
 struct PropertyInfo
 {
     PropertyType t;
-    MemberPtrVariant<T> pOffset;
+    size_t offset;
     const char *name;
+    std::span<const PropertyInfo> members{};
 };
 
-#define REFL_DEFINE(typename) using ReflBase = typename
+#define REFL_DEFINE(typename)  \
+    using ReflBase = typename; \
+    struct TypeInfo
 
-#define REFL_OBJ_DECLARE(T, name)      \
-    union                              \
-    {                                  \
-        ObjDesc<ReflBase> addr_##name; \
-        T name;                        \
-    }
-
-#define REFL_OBJ(name)              \
-    PropertyInfo<ReflBase>          \
-    {                               \
-        PropertyType::Obj,          \
-            &ReflBase::addr_##name, \
-            #name                   \
+#define REFL_OBJ(name)                                                   \
+    PropertyInfo                                                         \
+    {                                                                    \
+        PropertyType::Obj,                                               \
+            offsetof(ReflBase, name),                                    \
+            #name,                                                       \
+            std::span{decltype(ReflBase::##name)::TypeInfo::Properties}, \
     }
 
 #define REFL_PROP(name)                                \
-    PropertyInfo<ReflBase>                             \
+    PropertyInfo                                       \
     {                                                  \
         GetPropertyType<decltype(ReflBase::##name)>(), \
-            &ReflBase::##name,                         \
-            #name                                      \
+            offsetof(ReflBase, name),                  \
+            #name,                                     \
+            {},                                        \
     }
 
 template <typename T>
-PropertyInfo<T> FindMemberInfo(std::string_view name)
+PropertyInfo FindMemberInfo(std::string_view name)
 {
     const auto properties = std::span{T::TypeInfo::Properties};
     auto itr = std::find_if(properties.begin(), properties.end(),
-                            [name](const PropertyInfo<T> &elem)
+                            [name](const PropertyInfo &elem)
                             {
                                 return name == elem.name;
                             });
@@ -91,27 +80,33 @@ PropertyInfo<T> FindMemberInfo(std::string_view name)
 template <typename T>
 void PrintMembers(const T &obj)
 {
-    const auto properties = std::span{T::TypeInfo::Properties};
+    PrintMembersImpl(reinterpret_cast<uintptr_t>(&obj), std::span{T::TypeInfo::Properties});
+}
+
+inline void PrintMembersImpl(uintptr_t address, std::span<const PropertyInfo> properties)
+{
     for (auto &&elem : properties)
     {
-        switch (elem.pOffset.index())
+        uintptr_t memberAddress = address + elem.offset;
+        switch (elem.t)
         {
-        case 0: // int
+        case PropertyType::Int:
         {
-            auto offset = std::get<0>(elem.pOffset);
-            printf("- %s = %d\n", elem.name, obj.*offset);
+            auto *pMember = reinterpret_cast<int *>(memberAddress);
+            printf("- [int] %s = %d\n", elem.name, *pMember);
             break;
         }
-        case 1: // float
+        case PropertyType::Float:
         {
-            auto offset = std::get<1>(elem.pOffset);
-            printf("- %s = %g\n", elem.name, obj.*offset);
+            auto *pMember = reinterpret_cast<float *>(memberAddress);
+            printf("- [float] %s = %g\n", elem.name, *pMember);
             break;
         }
-        case 2: // obj
+        case PropertyType::Obj:
         {
-            auto offset = std::get<2>(elem.pOffset);
-            printf("- %s = %p\n", elem.name, &(obj.*offset));
+            auto *pMember = reinterpret_cast<void *>(memberAddress);
+            printf("- [obj] %s = %p\n", elem.name, pMember);
+            PrintMembersImpl(reinterpret_cast<uintptr_t>(pMember), elem.members);
             break;
         }
         }

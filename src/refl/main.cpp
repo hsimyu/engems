@@ -16,30 +16,30 @@ int main()
 
     PrintMembers(c);
 
-    {
-        auto info = FindMemberInfo<MyClass>("b");
-        if (info.t != PropertyType::Invalid)
-        {
-            printf("- name = %s, type = %d\n", info.name, info.t);
-            auto offset = std::get<0>(info.pOffset);
-            printf("- value = %d\n", c.*offset); // 12
-        }
-    }
+    // {
+    //     auto info = FindMemberInfo<MyClass>("b");
+    //     if (info.t != PropertyType::Invalid)
+    //     {
+    //         printf("- name = %s, type = %d\n", info.name, info.t);
+    //         auto offset = std::get<0>(info.pOffset);
+    //         printf("- value = %d\n", c.*offset); // 12
+    //     }
+    // }
 
-    {
-        auto info = FindMemberInfo<MyClass>("sub");
-        if (info.t != PropertyType::Invalid)
-        {
-            printf("- name = %s, type = %d\n", info.name, info.t);
+    // {
+    //     auto info = FindMemberInfo<MyClass>("sub");
+    //     if (info.t != PropertyType::Invalid)
+    //     {
+    //         printf("- name = %s, type = %d\n", info.name, info.t);
 
-            auto offset = std::get<2>(info.pOffset);
-            auto address = &(c.*offset);
-            printf("subObj address = %p\n", address);
+    //         auto offset = std::get<2>(info.pOffset);
+    //         auto address = &(c.*offset);
+    //         printf("subObj address = %p\n", address);
 
-            auto *pSubObj = reinterpret_cast<SubClass *>(address);
-            printf("subObj value = %d\n", pSubObj->d);
-        }
-    }
+    //         auto *pSubObj = reinterpret_cast<SubClass *>(address);
+    //         printf("subObj value = %d\n", pSubObj->d);
+    //     }
+    // }
 
     return 0;
 }

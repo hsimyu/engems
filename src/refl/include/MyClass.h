@@ -5,6 +5,15 @@
 struct SubClass
 {
     int d = 0;
+
+    REFL_DEFINE(SubClass);
+};
+
+struct SubClass::TypeInfo
+{
+    static constexpr PropertyInfo Properties[] = {
+        REFL_PROP(d),
+    };
 };
 
 struct MyClass
@@ -15,15 +24,15 @@ struct MyClass
     int b;
     float c;
 
-    REFL_OBJ_DECLARE(SubClass, sub);
+    SubClass sub;
+};
 
-    struct TypeInfo
-    {
-        static constexpr PropertyInfo<ReflBase> Properties[] = {
-            REFL_PROP(a),
-            REFL_PROP(b),
-            REFL_PROP(c),
-            REFL_OBJ(sub),
-        };
+struct MyClass::TypeInfo
+{
+    static constexpr PropertyInfo Properties[] = {
+        REFL_PROP(a),
+        REFL_PROP(b),
+        REFL_PROP(c),
+        REFL_OBJ(sub),
     };
 };
